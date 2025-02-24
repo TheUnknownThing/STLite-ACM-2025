@@ -386,7 +386,10 @@ public:
     }
 
     iterator new_pos = pos;
-    std::copy_backward(pos, end(), end() + 1);
+    for (iterator i = end(); i != pos; --i) {
+      new (static_cast<void*>(&*i)) T(std::move(*(i - 1)));
+      container[i - begin() - 1].~T();
+    }
     new (container + static_cast<size_t>(pos - begin())) T(value);
     length++;
 
@@ -406,12 +409,13 @@ public:
     if (length == capacity) {
       double_space();
     }
-    for (iterator i = end(); i != ind; --i) {
-      *i = *(i - 1);
+    for (size_t i = length; i > ind; --i) {
+      new (container + i) T(std::move(container[i - 1]));
+      container[i - 1].~T();
     }
-    container[ind].~T();
     new (container + ind) T(value);
     length++;
+    
     return iterator(this, ind);
   }
   /**
