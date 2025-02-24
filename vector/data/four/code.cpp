@@ -9,8 +9,10 @@ void complex_test()
 {
     std::cout << "Supplementary test for large amounts of data ..." << std::endl;
     sjtu::vector<Diamond::Matrix<Util::Bint>> myVec;
-    for (int i = 1; i <= 1926; ++i)
+    for (int i = 1; i <= 1926; ++i){
+        std::cout << i << std::endl;
         myVec.push_back(Diamond::Matrix<Util::Bint>(i % 8 + 1, i % 17 + 1, Util::Bint(i * 817)));
+    }
     int o = 1234;
     while (o--)
         myVec.pop_back();

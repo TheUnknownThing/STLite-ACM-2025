@@ -3,10 +3,10 @@
 
 #include "exceptions.hpp"
 
-#include <algorithm>
 #include <climits>
 #include <cstddef>
 #include <cstring>
+#include <iostream>
 #include <strings.h>
 
 namespace sjtu {
@@ -248,12 +248,8 @@ public:
     /**
      * some other operator for iterator.
      */
-    bool operator!=(const iterator &rhs) const {
-      return !(*this == rhs);
-    }
-    bool operator!=(const const_iterator &rhs) const {
-      return !(*this == rhs);
-    }
+    bool operator!=(const iterator &rhs) const { return !(*this == rhs); }
+    bool operator!=(const const_iterator &rhs) const { return !(*this == rhs); }
   };
   /**
    * TODO Constructs
@@ -340,7 +336,7 @@ public:
     if (length == 0) {
       throw container_is_empty();
     }
-    return this->at(length);
+    return this->at(length - 1);
   }
   /**
    * returns an iterator to the beginning.
@@ -351,9 +347,9 @@ public:
   /**
    * returns an iterator to the end.
    */
-  iterator end() { return iterator(this, length + 1); }
-  const_iterator end() const { return const_iterator(this, length + 1); }
-  const_iterator cend() const { return const_iterator(this, length + 1); }
+  iterator end() { return iterator(this, length); }
+  const_iterator end() const { return const_iterator(this, length); }
+  const_iterator cend() const { return const_iterator(this, length); }
   /**
    * checks whether the container is empty
    */
@@ -384,14 +380,17 @@ public:
    */
   iterator insert(iterator pos, const T &value) {
     if (length == capacity) {
+      size_t offset = pos - begin();
       double_space();
+      pos = begin() + offset;
     }
-    for (iterator i = end(); i != pos; --i) {
-      *i = *(i - 1);
-    }
-    *pos = value;
+
+    iterator new_pos = pos;
+    std::copy_backward(pos, end(), end() + 1);
+    new (container + static_cast<size_t>(pos - begin())) T(value);
     length++;
-    return pos;
+
+    return new_pos;
   }
   /**
    * inserts value at index ind.
@@ -410,7 +409,8 @@ public:
     for (iterator i = end(); i != ind; --i) {
       *i = *(i - 1);
     }
-    container[ind] = new T(value);
+    container[ind].~T();
+    new (container + ind) T(value);
     length++;
     return iterator(this, ind);
   }
@@ -451,7 +451,7 @@ public:
     if (length == capacity) {
       double_space();
     }
-    container[length] = value;
+    new (container + length) T(value);
     length++;
   }
   /**

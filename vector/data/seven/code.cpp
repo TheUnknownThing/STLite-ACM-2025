@@ -89,7 +89,9 @@ void test_insert() {
 		b[i].push_back(0);
 		c[i].push_back(1);
 	}
+	std::cout << "test" << std::endl;
 	for (int i = 0; i < 10; ++i) {
+		std::cout << i << std::endl;
 		a.insert(a.begin() + 1, std::vector<int>{1, 2});
 		b.insert(b.begin() + 1, a[1]);
 		c.insert(c.begin() + 1, b[1]);
