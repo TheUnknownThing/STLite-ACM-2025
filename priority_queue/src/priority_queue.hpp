@@ -109,7 +109,16 @@ class priority_queue {
      * @param e the element to be pushed
      */
     void push(const T& e) {
-        root = merge(root, new Node(e));
+        Node* original_root = root;
+        Node* to_merge = new Node(e);
+        try {
+            root = merge(root, to_merge);
+        } catch (...) {
+            // back to original state
+            root = original_root;
+            delete to_merge;
+            throw runtime_error();
+        }
         _size++;
     }
 
@@ -120,7 +129,14 @@ class priority_queue {
     void pop() {
         if (empty()) throw container_is_empty();
         Node* tmp = root;
-        root = merge(root->left, root->right);
+        
+        try {
+            root = merge(root->left, root->right);
+        } catch (...) {
+            root = tmp;
+            throw runtime_error();
+        }
+
         delete tmp;
         _size--;
     }
@@ -147,11 +163,23 @@ class priority_queue {
      * The complexity is at most O(logn).
      * @param other the priority_queue to be merged.
      */
-    void merge(priority_queue& other) {
-        root = merge(root, other.root);
-        _size += other._size;
-        other.root = nullptr;
-        other._size = 0;
+     void merge(priority_queue& other) {
+        Node* original_root = root;
+        Node* other_root = other.root;
+        size_t original_size = _size;
+        
+        try {
+            root = merge(root, other.root);
+            _size += other._size;
+            other.root = nullptr;
+            other._size = 0;
+        } catch (...) {
+            // Restore original state
+            root = original_root;
+            other.root = other_root;
+            throw runtime_error();
+        }
+        
     }
 };
 
