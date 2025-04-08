@@ -81,12 +81,14 @@ class map {
                 }
             }
             if (left) {
-                left->height = 1 + std::max(left->left ? left->left->height : 0,
-                                            left->right ? left->right->height : 0);
+                left->height =
+                    1 + std::max(left->left ? left->left->height : 0,
+                                 left->right ? left->right->height : 0);
             }
             if (right) {
-                right->height = 1 + std::max(right->left ? right->left->height : 0,
-                                             right->right ? right->right->height : 0);
+                right->height =
+                    1 + std::max(right->left ? right->left->height : 0,
+                                 right->right ? right->right->height : 0);
             }
             height = 1 + std::max(left ? left->height : 0,
                                   right ? right->height : 0);
@@ -98,24 +100,24 @@ class map {
         }
 
         Node *RR(Node *&t) {
-            Node* temp = t->right;
+            Node *temp = t->right;
             t->right = temp->left;
             temp->left = t;
             t->height = 1 + std::max(t->left ? t->left->height : 0,
                                      t->right ? t->right->height : 0);
-            temp->height = 1 + std::max(temp->right ? temp->right->height : 0,
-                                        t->height);
+            temp->height =
+                1 + std::max(temp->right ? temp->right->height : 0, t->height);
             return temp;
         }
 
         Node *LL(Node *&t) {
-            Node* temp = t->left;
+            Node *temp = t->left;
             t->left = temp->right;
             temp->right = t;
             t->height = 1 + std::max(t->left ? t->left->height : 0,
-                                      t->right ? t->right->height : 0);
-            temp->height = 1 + std::max(temp->left ? temp->left->height : 0,
-                                        t->height);
+                                     t->right ? t->right->height : 0);
+            temp->height =
+                1 + std::max(temp->left ? temp->left->height : 0, t->height);
             return temp;
         }
 
@@ -155,11 +157,27 @@ class map {
         return node->balance();
     }
 
-    Node *find_node(Node *node) {
+    Node *find_successor(Node *node) {
         while (node->left != nullptr) {
             node = node->left;
         }
         return node;
+    }
+
+    Node *find_parent(Node *node, const Key &key) {
+        Node *parent = nullptr;
+        while (node != nullptr) {
+            if (Compare()(key, node->data.first)) {
+                parent = node;
+                node = node->left;
+            } else if (Compare()(node->data.first, key)) {
+                parent = node;
+                node = node->right;
+            } else {
+                return parent;
+            }
+        }
+        return nullptr;
     }
 
     Node *erase(const Key &key, Node *&node) {
@@ -181,13 +199,28 @@ class map {
                 return temp;
             } else {
                 // two children
-                // TODO
+                Node *s = find_successor(node->right);  // new root
+                Node *parent =
+                    find_parent(node->right, s->data.first);  // parent of s
+
+                // disconnect s
+                if (parent == nullptr) {
+                    node->right = s->right;
+                } else {
+                    parent->left = s->right;
+                }
+
+                // replace node with s
+                s->left = node->left;
+                s->right = node->right;
+                delete node;
+                node = s;
             }
         }
         return node->balance();
     }
 
-    T& find(const Key &key, Node *node) {
+    T &find(const Key &key, Node *node) {
         if (node == nullptr) {
             throw index_out_of_bound();
         }
@@ -197,6 +230,19 @@ class map {
             return find(key, node->right);
         } else {
             return node->data.second;
+        }
+    }
+
+    Node *find_node(const Key &key, Node *node) {
+        if (node == nullptr) {
+            return nullptr;
+        }
+        if (Compare()(key, node->data.first)) {
+            return find_node(key, node->left);
+        } else if (Compare()(node->data.first, key)) {
+            return find_node(key, node->right);
+        } else {
+            return node;
         }
     }
 
@@ -218,37 +264,57 @@ class map {
          * TODO add data members
          *   just add whatever you want.
          */
+        Node *node;
+        map *map_ptr;
+
        public:
-        iterator() {
-            // TODO
+        iterator() : node(nullptr), map_ptr(nullptr) {
         }
 
-        iterator(const iterator &other) {
-            // TODO
+        iterator(const iterator &other)
+            : node(other.node), map_ptr(other.map_ptr) {
         }
 
         /**
          * TODO iter++
          */
         iterator operator++(int) {
+            iterator temp = *this;
+            ++(*this);
+            return temp;
         }
 
         /**
          * TODO ++iter
          */
         iterator &operator++() {
+            if (node == nullptr) {
+                throw invalid_iterator();
+            }
+            // TODO
+            // find the next node in the map.
+            return *this;
         }
 
         /**
          * TODO iter--
          */
         iterator operator--(int) {
+            iterator temp = *this;
+            --(*this);
+            return temp;
         }
 
         /**
          * TODO --iter
          */
         iterator &operator--() {
+            if (node == nullptr) {
+                throw invalid_iterator();
+            }
+            // TODO
+            // find the previous node in the map.
+            return *this;
         }
 
         /**
@@ -256,21 +322,29 @@ class map {
          * same memory).
          */
         value_type &operator*() const {
+            /*if (node == nullptr) {
+                throw invalid_iterator();
+            }*/ // throw? I don't know.
+            return node->data;
         }
 
         bool operator==(const iterator &rhs) const {
+            return node == rhs.node;
         }
 
         bool operator==(const const_iterator &rhs) const {
+            return node == rhs.node;
         }
 
         /**
          * some other operator for iterator.
          */
         bool operator!=(const iterator &rhs) const {
+            return node != rhs.node;
         }
 
         bool operator!=(const const_iterator &rhs) const {
+            return node != rhs.node;
         }
 
         /**
@@ -280,28 +354,96 @@ class map {
          * for help.
          */
         value_type *operator->() const noexcept {
+            return &node->data;
         }
     };
+
     class const_iterator {
         // it should has similar member method as iterator.
         //  and it should be able to construct from an iterator.
        private:
         // data members.
+        Node *node;
+        const map *map_ptr;
+
        public:
-        const_iterator() {
-            // TODO
+        const_iterator() : node(nullptr), map_ptr(nullptr) {
+        }
+        const_iterator(Node *node, const map *map_ptr)
+            : node(node), map_ptr(map_ptr) {
         }
 
-        const_iterator(const const_iterator &other) {
-            // TODO
+        const_iterator(const const_iterator &other)
+            : node(other.node), map_ptr(other.map_ptr) {
         }
 
-        const_iterator(const iterator &other) {
-            // TODO
+        const_iterator(const iterator &other)
+            : node(other.node), map_ptr(other.map_ptr) {
         }
-        // And other methods in iterator.
-        // And other methods in iterator.
-        // And other methods in iterator.
+        const_iterator &operator=(const const_iterator &other) {
+            if (this != &other) {
+                node = other.node;
+                map_ptr = other.map_ptr;
+            }
+            return *this;
+        }
+        const_iterator &operator=(const iterator &other) {
+            if (this != &other) {
+                node = other.node;
+                map_ptr = other.map_ptr;
+            }
+            return *this;
+        }
+        const_iterator operator++(int) {
+            const_iterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+        const_iterator &operator++() {
+            if (node == nullptr) {
+                throw invalid_iterator();
+            }
+            // TODO
+            // find the next node in the map.
+            return *this;
+        }
+        const_iterator operator--(int) {
+            const_iterator temp = *this;
+            --(*this);
+            return temp;
+        }
+        const_iterator &operator--() {
+            if (node == nullptr) {
+                throw invalid_iterator();
+            }
+            // TODO
+            // find the previous node in the map.
+            return *this;
+        }
+        const value_type &operator*() const {
+            if (node == nullptr) {
+                throw invalid_iterator();
+            }
+            return node->data;
+        }
+        const value_type *operator->() const noexcept {
+            if (node == nullptr) {
+                throw invalid_iterator();
+            }
+            return &node->data;
+        }
+        bool operator==(const const_iterator &rhs) const {
+            return node == rhs.node;
+        }
+        bool operator==(const iterator &rhs) const {
+            return node == rhs.node;
+        }
+        bool operator!=(const const_iterator &rhs) const {
+            return node != rhs.node;
+        }
+        bool operator!=(const iterator &rhs) const {
+            return node != rhs.node;
+        }
     };
 
     /**
@@ -372,7 +514,9 @@ class map {
             return at(key);
         } catch (index_out_of_bound &) {
             // insert
-            // TODO
+            value_type value(key, T());
+            pair<iterator, bool> result = insert(value);
+            return result.first->second;
         }
     }
 
@@ -436,6 +580,20 @@ class map {
      * insertion), the second one is true if insert successfully, or false.
      */
     pair<iterator, bool> insert(const value_type &value) {
+        if (root == nullptr) {
+            root = new Node(value);
+            ++node_count;
+            return pair<iterator, bool>(iterator(root, this), true);
+        }
+        Node *node = insert(value, root);
+        if (node == nullptr) {
+            // exists
+            return pair<iterator, bool>(
+                iterator(find_node(value.first, root), this), false);
+        } else {
+            ++node_count;
+            return pair<iterator, bool>(iterator(node, this), true);
+        }
     }
 
     /**
@@ -445,6 +603,11 @@ class map {
      * an element out of this)
      */
     void erase(iterator pos) {
+        if (pos.node == nullptr || pos.map_ptr != this) {
+            throw invalid_iterator();
+        }
+        root = erase(pos.node->data.first, root);
+        --node_count;
     }
 
     /**
@@ -455,6 +618,13 @@ class map {
      * The default method of check the equivalence is !(a < b || b > a)
      */
     size_t count(const Key &key) const {
+        if (root == nullptr) {
+            return 0;
+        }
+        if (find(key, root) == key) {
+            return 1;
+        }
+        return 0;
     }
 
     /**
@@ -465,9 +635,25 @@ class map {
      * returned.
      */
     iterator find(const Key &key) {
+        if (root == nullptr) {
+            return end();
+        }
+        Node *node = find_node(key, root);
+        if (node == nullptr) {
+            return end();
+        }
+        return iterator(node, this);
     }
 
     const_iterator find(const Key &key) const {
+        if (root == nullptr) {
+            return cend();
+        }
+        Node *node = find_node(key, root);
+        if (node == nullptr) {
+            return cend();
+        }
+        return const_iterator(node, this);
     }
 };
 
