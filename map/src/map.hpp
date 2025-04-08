@@ -98,15 +98,35 @@ class map {
         }
 
         Node *RR(Node *&t) {
+            Node* temp = t->right;
+            t->right = temp->left;
+            temp->left = t;
+            t->height = 1 + std::max(t->left ? t->left->height : 0,
+                                     t->right ? t->right->height : 0);
+            temp->height = 1 + std::max(temp->right ? temp->right->height : 0,
+                                        t->height);
+            return temp;
         }
 
         Node *LL(Node *&t) {
+            Node* temp = t->left;
+            t->left = temp->right;
+            temp->right = t;
+            t->height = 1 + std::max(t->left ? t->left->height : 0,
+                                      t->right ? t->right->height : 0);
+            temp->height = 1 + std::max(temp->left ? temp->left->height : 0,
+                                        t->height);
+            return temp;
         }
 
         Node *LR(Node *&t) {
+            t->left = RR(t->left);
+            return LL(t);
         }
 
         Node *RL(Node *&t) {
+            t->right = LL(t->right);
+            return RR(t);
         }
     };
 
@@ -165,6 +185,19 @@ class map {
             }
         }
         return node->balance();
+    }
+
+    T& find(const Key &key, Node *node) {
+        if (node == nullptr) {
+            throw index_out_of_bound();
+        }
+        if (Compare()(key, node->data.first)) {
+            return find(key, node->left);
+        } else if (Compare()(node->data.first, key)) {
+            return find(key, node->right);
+        } else {
+            return node->data.second;
+        }
     }
 
     void deep_copy(Node *&this_node, Node *other_node) {
@@ -315,9 +348,17 @@ class map {
      * `index_out_of_bound'
      */
     T &at(const Key &key) {
+        if (root == nullptr) {
+            throw index_out_of_bound();
+        }
+        return find(key, root);
     }
 
     const T &at(const Key &key) const {
+        if (root == nullptr) {
+            throw index_out_of_bound();
+        }
+        return find(key, root);
     }
 
     /**
@@ -327,12 +368,22 @@ class map {
      * key, performing an insertion if such key does not already exist.
      */
     T &operator[](const Key &key) {
+        try {
+            return at(key);
+        } catch (index_out_of_bound &) {
+            // insert
+            // TODO
+        }
     }
 
     /**
      * behave like at() throw index_out_of_bound if such key does not exist.
      */
     const T &operator[](const Key &key) const {
+        if (root == nullptr) {
+            throw index_out_of_bound();
+        }
+        return find(key, root);
     }
 
     /**
