@@ -129,7 +129,7 @@ class priority_queue {
     void pop() {
         if (empty()) throw container_is_empty();
         Node* tmp = root;
-        
+
         try {
             root = merge(root->left, root->right);
         } catch (...) {
@@ -163,11 +163,11 @@ class priority_queue {
      * The complexity is at most O(logn).
      * @param other the priority_queue to be merged.
      */
-     void merge(priority_queue& other) {
+    void merge(priority_queue& other) {
         Node* original_root = root;
         Node* other_root = other.root;
         size_t original_size = _size;
-        
+
         try {
             root = merge(root, other.root);
             _size += other._size;
@@ -179,7 +179,6 @@ class priority_queue {
             other.root = other_root;
             throw runtime_error();
         }
-        
     }
 };
 
