@@ -64,20 +64,19 @@ class map {
             delete right;
         }
 
-       private:
         Node *balance() {
             int factor = get_balance();
             if (factor > 1) {
                 if (left->get_balance() > 0) {
-                    return LL(this);
+                    return LL();
                 } else {
-                    return LR(this);
+                    return LR();
                 }
             } else if (factor < -1) {
                 if (right->get_balance() < 0) {
-                    return RR(this);
+                    return RR();
                 } else {
-                    return RL(this);
+                    return RL();
                 }
             }
             if (left) {
@@ -99,36 +98,43 @@ class map {
             return (left ? left->height : 0) - (right ? right->height : 0);
         }
 
-        Node *RR(Node *&t) {
-            Node *temp = t->right;
-            t->right = temp->left;
-            temp->left = t;
-            t->height = 1 + std::max(t->left ? t->left->height : 0,
-                                     t->right ? t->right->height : 0);
+       private:
+        Node *RR() {
+            Node *temp = right;
+            right = temp->left;
+            temp->left = this;
+            height = 1 + std::max(left ? left->height : 0,
+                                  right ? right->height : 0);
             temp->height =
-                1 + std::max(temp->right ? temp->right->height : 0, t->height);
+                1 + std::max(temp->right ? temp->right->height : 0, height);
             return temp;
         }
 
-        Node *LL(Node *&t) {
-            Node *temp = t->left;
-            t->left = temp->right;
-            temp->right = t;
-            t->height = 1 + std::max(t->left ? t->left->height : 0,
-                                     t->right ? t->right->height : 0);
+        Node *LL() {
+            Node *temp = left;
+            left = temp->right;
+            temp->right = this;
+            height = 1 + std::max(left ? left->height : 0,
+                                  right ? right->height : 0);
             temp->height =
-                1 + std::max(temp->left ? temp->left->height : 0, t->height);
+                1 + std::max(temp->left ? temp->left->height : 0, height);
             return temp;
         }
 
-        Node *LR(Node *&t) {
-            t->left = RR(t->left);
-            return LL(t);
+        Node *LR() {
+            Node *temp = left->right;
+            left->right = temp->left;
+            temp->left = left;
+            left = temp;
+            return RR();
         }
 
-        Node *RL(Node *&t) {
-            t->right = LL(t->right);
-            return RR(t);
+        Node *RL() {
+            Node *temp = right->left;
+            right->left = temp->right;
+            temp->right = right;
+            right = temp;
+            return LL();
         }
     };
 
@@ -140,13 +146,13 @@ class map {
             if (node->left == nullptr) {
                 node->left = new Node(value);
             } else {
-                node->left = node->left->insert(value);
+                node->left = insert(value, node->left);
             }
         } else if (Compare()(node->data.first, value.first)) {
             if (node->right == nullptr) {
                 node->right = new Node(value);
             } else {
-                node->right = node->right->insert(value);
+                node->right = insert(value, node->right);
             }
         } else {
             return nullptr;  // already exists
@@ -164,7 +170,30 @@ class map {
         return node;
     }
 
+    Node *find_successor(Node *node) const {
+        while (node->left != nullptr) {
+            node = node->left;
+        }
+        return node;
+    }
+
     Node *find_parent(Node *node, const Key &key) {
+        Node *parent = nullptr;
+        while (node != nullptr) {
+            if (Compare()(key, node->data.first)) {
+                parent = node;
+                node = node->left;
+            } else if (Compare()(node->data.first, key)) {
+                parent = node;
+                node = node->right;
+            } else {
+                return parent;
+            }
+        }
+        return nullptr;
+    }
+
+    Node *find_parent(Node *node, const Key &key) const {
         Node *parent = nullptr;
         while (node != nullptr) {
             if (Compare()(key, node->data.first)) {
@@ -293,12 +322,12 @@ class map {
         Node *node;
         map *map_ptr;
         friend class map;
+
        public:
         iterator() : node(nullptr), map_ptr(nullptr) {
         }
 
-        iterator(Node *node, map *map_ptr)
-            : node(node), map_ptr(map_ptr) {
+        iterator(Node *node, map *map_ptr) : node(node), map_ptr(map_ptr) {
         }
 
         iterator(const iterator &other)
@@ -418,6 +447,7 @@ class map {
         Node *node;
         const map *map_ptr;
         friend class map;
+
        public:
         const_iterator() : node(nullptr), map_ptr(nullptr) {
         }
@@ -440,10 +470,8 @@ class map {
             return *this;
         }
         const_iterator &operator=(const iterator &other) {
-            if (this != &other) {
-                node = other.node;
-                map_ptr = other.map_ptr;
-            }
+            node = other.node;
+            map_ptr = other.map_ptr;
             return *this;
         }
         const_iterator operator++(int) {
@@ -709,7 +737,7 @@ class map {
         if (root == nullptr) {
             return 0;
         }
-        Node* temp = root;
+        Node *temp = root;
         while (temp != nullptr) {
             if (Compare()(temp->data.first, key)) {
                 temp = temp->right;
