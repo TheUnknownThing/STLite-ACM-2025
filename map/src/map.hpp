@@ -291,8 +291,20 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            // TODO
-            // find the next node in the map.
+            Node* successor = map_ptr->find_successor(node->right);
+            if (successor != nullptr) {
+                node = successor;
+            } else {
+                Node* parent = map_ptr->find_parent(node, node->data.first);
+                while (parent != nullptr && parent->right == node) {
+                    node = parent;
+                    parent = map_ptr->find_parent(parent, parent->data.first);
+                }
+                node = parent;
+            }
+            /*if (node == nullptr) {
+                throw invalid_iterator();
+            }*/ // throw? I don't know.
             return *this;
         }
 
@@ -309,11 +321,21 @@ class map {
          * TODO --iter
          */
         iterator &operator--() {
-            if (node == nullptr) {
+            if (node == nullptr && map_ptr == nullptr) {
                 throw invalid_iterator();
             }
-            // TODO
-            // find the previous node in the map.
+
+            Node* predecessor = map_ptr->find_parent(node, node->data.first);
+            if (predecessor != nullptr) {
+                node = predecessor;
+            } else {
+                Node* parent = map_ptr->find_parent(node, node->data.first);
+                while (parent != nullptr && parent->left == node) {
+                    node = parent;
+                    parent = map_ptr->find_parent(parent, parent->data.first);
+                }
+                node = parent;
+            }
             return *this;
         }
 
@@ -403,8 +425,17 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            // TODO
-            // find the next node in the map.
+            Node* successor = map_ptr->find_successor(node->right);
+            if (successor != nullptr) {
+                node = successor;
+            } else {
+                Node* parent = map_ptr->find_parent(node, node->data.first);
+                while (parent != nullptr && parent->right == node) {
+                    node = parent;
+                    parent = map_ptr->find_parent(parent, parent->data.first);
+                }
+                node = parent;
+            }
             return *this;
         }
         const_iterator operator--(int) {
@@ -416,8 +447,17 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            // TODO
-            // find the previous node in the map.
+            Node* predecessor = map_ptr->find_parent(node, node->data.first);
+            if (predecessor != nullptr) {
+                node = predecessor;
+            } else {
+                Node* parent = map_ptr->find_parent(node, node->data.first);
+                while (parent != nullptr && parent->left == node) {
+                    node = parent;
+                    parent = map_ptr->find_parent(parent, parent->data.first);
+                }
+                node = parent;
+            }
             return *this;
         }
         const value_type &operator*() const {
@@ -534,9 +574,25 @@ class map {
      * return a iterator to the beginning
      */
     iterator begin() {
+        if (root == nullptr) {
+            return iterator(nullptr, this);
+        }
+        Node *node = root;
+        while (node->left != nullptr) {
+            node = node->left;
+        }
+        return iterator(node, this);
     }
 
     const_iterator cbegin() const {
+        if (root == nullptr) {
+            return const_iterator(nullptr, this);
+        }
+        Node *node = root;
+        while (node->left != nullptr) {
+            node = node->left;
+        }
+        return const_iterator(node, this);
     }
 
     /**
@@ -544,9 +600,11 @@ class map {
      * in fact, it returns past-the-end.
      */
     iterator end() {
+        return iterator(nullptr, this);
     }
 
     const_iterator cend() const {
+        return const_iterator(nullptr, this);
     }
 
     /**
