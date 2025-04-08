@@ -233,7 +233,33 @@ class map {
         }
     }
 
+    const T &find(const Key &key, Node *node) const {
+        if (node == nullptr) {
+            throw index_out_of_bound();
+        }
+        if (Compare()(key, node->data.first)) {
+            return find(key, node->left);
+        } else if (Compare()(node->data.first, key)) {
+            return find(key, node->right);
+        } else {
+            return node->data.second;
+        }
+    }
+
     Node *find_node(const Key &key, Node *node) {
+        if (node == nullptr) {
+            return nullptr;
+        }
+        if (Compare()(key, node->data.first)) {
+            return find_node(key, node->left);
+        } else if (Compare()(node->data.first, key)) {
+            return find_node(key, node->right);
+        } else {
+            return node;
+        }
+    }
+
+    Node *find_node(const Key &key, Node *node) const {
         if (node == nullptr) {
             return nullptr;
         }
@@ -266,9 +292,13 @@ class map {
          */
         Node *node;
         map *map_ptr;
-
+        friend class map;
        public:
         iterator() : node(nullptr), map_ptr(nullptr) {
+        }
+
+        iterator(Node *node, map *map_ptr)
+            : node(node), map_ptr(map_ptr) {
         }
 
         iterator(const iterator &other)
@@ -291,11 +321,11 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            Node* successor = map_ptr->find_successor(node->right);
+            Node *successor = map_ptr->find_successor(node->right);
             if (successor != nullptr) {
                 node = successor;
             } else {
-                Node* parent = map_ptr->find_parent(node, node->data.first);
+                Node *parent = map_ptr->find_parent(node, node->data.first);
                 while (parent != nullptr && parent->right == node) {
                     node = parent;
                     parent = map_ptr->find_parent(parent, parent->data.first);
@@ -325,11 +355,11 @@ class map {
                 throw invalid_iterator();
             }
 
-            Node* predecessor = map_ptr->find_parent(node, node->data.first);
+            Node *predecessor = map_ptr->find_parent(node, node->data.first);
             if (predecessor != nullptr) {
                 node = predecessor;
             } else {
-                Node* parent = map_ptr->find_parent(node, node->data.first);
+                Node *parent = map_ptr->find_parent(node, node->data.first);
                 while (parent != nullptr && parent->left == node) {
                     node = parent;
                     parent = map_ptr->find_parent(parent, parent->data.first);
@@ -387,7 +417,7 @@ class map {
         // data members.
         Node *node;
         const map *map_ptr;
-
+        friend class map;
        public:
         const_iterator() : node(nullptr), map_ptr(nullptr) {
         }
@@ -425,11 +455,11 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            Node* successor = map_ptr->find_successor(node->right);
+            Node *successor = map_ptr->find_successor(node->right);
             if (successor != nullptr) {
                 node = successor;
             } else {
-                Node* parent = map_ptr->find_parent(node, node->data.first);
+                Node *parent = map_ptr->find_parent(node, node->data.first);
                 while (parent != nullptr && parent->right == node) {
                     node = parent;
                     parent = map_ptr->find_parent(parent, parent->data.first);
@@ -447,11 +477,11 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            Node* predecessor = map_ptr->find_parent(node, node->data.first);
+            Node *predecessor = map_ptr->find_parent(node, node->data.first);
             if (predecessor != nullptr) {
                 node = predecessor;
             } else {
-                Node* parent = map_ptr->find_parent(node, node->data.first);
+                Node *parent = map_ptr->find_parent(node, node->data.first);
                 while (parent != nullptr && parent->left == node) {
                     node = parent;
                     parent = map_ptr->find_parent(parent, parent->data.first);
@@ -679,8 +709,15 @@ class map {
         if (root == nullptr) {
             return 0;
         }
-        if (find(key, root) == key) {
-            return 1;
+        Node* temp = root;
+        while (temp != nullptr) {
+            if (Compare()(temp->data.first, key)) {
+                temp = temp->right;
+            } else if (Compare()(key, temp->data.first)) {
+                temp = temp->left;
+            } else {
+                return 1;  // found
+            }
         }
         return 0;
     }

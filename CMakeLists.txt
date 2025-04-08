@@ -11,5 +11,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
-add_subdirectory(priority_queue)
+add_subdirectory(map)
 enable_testing()
