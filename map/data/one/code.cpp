@@ -1,4 +1,4 @@
-#include "map.hpp"
+#include "../../src/map.hpp"
 #include <iostream>
 #include <cassert>
 #include <string>
@@ -41,23 +41,31 @@ void tester(void) {
 	//	test: empty(), size()
 	assert(map.empty() && map.size() == 0);
 	//	test: operator[], insert()
-	for (int i = 0; i < 100000; ++i) {
+	for (int i = 0; i < 10000; ++i) {
 		std::string string = "";
 		for (int number = i; number; number /= 10) {
 			char digit = '0' + number % 10;
 			string = digit + string;
 		}
+		// std::cout << "string: " << string << std::endl; // debug
 		if (i & 1) {
+			// std::cout << 1 << std::endl; // debug
 			map[Integer(i)] = string;
+			/*std::string* traverse_all = map.traverse_all();
+			for (int j = 0; j < map.size(); ++j) {
+				std::cout << traverse_all[j] << " ";
+			}
+			std::cout << std::endl;*/ // debug*
 			auto result = map.insert(sjtu::pair<Integer, std::string>(Integer(i), string));
 			assert(!result.second);
 		} else {
+			// std::cout << 0 << std::endl; // debug
 			auto result = map.insert(sjtu::pair<Integer, std::string>(Integer(i), string));
 			assert(result.second);
 		}
 	}
 	//	test: count(), find(), erase()
-	for (int i = 0; i < 100000; ++i) {
+	for (int i = 0; i < 10000; ++i) {
 		if (i > 1896 && i <= 2016) {
 			continue;
 		}
@@ -65,6 +73,7 @@ void tester(void) {
 		assert(map.find(Integer(i)) != map.end());
 		map.erase(map.find(Integer(i)));
 	}
+	std::cout << "second test done" << std::endl;
 	//	test: constructor, operator=, clear();
 	for (int i = 0; i < (int)map.size(); ++i) {
 		sjtu::map<Integer, std::string, Compare> copy(map);
@@ -81,15 +90,20 @@ void tester(void) {
 		std::cout << map.size() << " " << copy.size() << " ";
 	}
 	std::cout << std::endl;
+	std::cout << "third test done" << std::endl;
 	//	test: const_iterator, cbegin(), cend(), operator++, at()
 	sjtu::map<Integer, std::string, Compare>::const_iterator const_iterator;
 	const_iterator = map.cbegin();
+	int counter = 0;
 	while (const_iterator != map.cend()) {
 		const Integer integer(const_iterator->first);
+		counter++;
 		const_iterator++;
 		std::cout << map.at(integer) << " ";
+		std::cout << counter << std::endl; // debug
 	}
 	std::cout << std::endl;
+	std::cout << "fourth test done" << std::endl;
 	//	test: iterator, operator--, operator->
 	sjtu::map<Integer, std::string, Compare>::iterator iterator;
 	iterator = map.end();

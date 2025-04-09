@@ -13,3 +13,6 @@ CMakeUserPresets.json
 
 build/
 .cache/
+.idea/
+cmake-build-debug/
+map/data/one/code
