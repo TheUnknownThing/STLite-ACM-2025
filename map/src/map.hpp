@@ -1,3 +1,4 @@
+// acmoj: 2671
 /**
  * implement a container like std::map
  */
@@ -7,7 +8,6 @@
 // only for std::less<T>
 #include <cstddef>
 #include <functional>
-#include <iostream>  // for debug
 
 #include "exceptions.hpp"
 #include "utility.hpp"
@@ -69,6 +69,19 @@ class map {
             return this;
         }
 
+        void clear() {
+            if (left) {
+                left->clear();
+                delete left;
+                left = nullptr;
+            }
+            if (right) {
+                right->clear();
+                delete right;
+                right = nullptr;
+            }
+        }
+
        private:
         int get_balance() {
             return (left ? left->height : 0) - (right ? right->height : 0);
@@ -118,6 +131,7 @@ class map {
     Node *insert(const value_type &value, Node *&node) {
         if (node == nullptr) {
             node = new Node(value);
+            ++node_count;
             return node;
         }
 
@@ -272,6 +286,58 @@ class map {
         }
     }
 
+    Node *find_successor_ancestor(Node *node) const {
+        if (!root || !node) return nullptr;
+        Node *successor_candidate = nullptr;
+        Node *current = root;
+        while (current != nullptr) {
+            if (Compare()(node->data.first, current->data.first)) {
+                successor_candidate = current;
+                current = current->left;
+            } else if (Compare()(current->data.first, node->data.first)) {
+                current = current->right;
+            } else {
+                break;
+            }
+        }
+        return successor_candidate;
+    }
+
+    Node *find_predecessor(Node *node) const {
+        if (!node || !node->left) return nullptr;
+        Node *current = node->left;
+        while (current->right != nullptr) {
+            current = current->right;
+        }
+        return current;
+    }
+
+    Node *find_predecessor_ancestor(Node *node) const {
+        if (!root || !node) return nullptr;
+        Node *predecessor_candidate = nullptr;
+        Node *current = root;
+        while (current != nullptr) {
+            if (Compare()(node->data.first, current->data.first)) {
+                current = current->left;
+            } else if (Compare()(current->data.first, node->data.first)) {
+                predecessor_candidate = current;
+                current = current->right;
+            } else {
+                break;
+            }
+        }
+        return predecessor_candidate;
+    }
+
+    Node *find_max_node(Node *node) const {
+        // for end()--;
+        if (!node) return nullptr;
+        while (node->right != nullptr) {
+            node = node->right;
+        }
+        return node;
+    }
+
     void deep_copy(Node *&this_node, Node *other_node) {
         if (other_node == nullptr) {
             this_node = nullptr;
@@ -338,20 +404,13 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            Node *successor = map_ptr->find_successor(node->right);
-            if (successor != nullptr) {
-                node = successor;
+            Node *p = node;
+
+            if (p->right != nullptr) {
+                node = map_ptr->find_successor(p->right);
             } else {
-                Node *parent = map_ptr->find_parent(node, node->data.first);
-                while (parent != nullptr && parent->right == node) {
-                    node = parent;
-                    parent = map_ptr->find_parent(parent, parent->data.first);
-                }
-                node = parent;
+                node = map_ptr->find_successor_ancestor(p);
             }
-            /*if (node == nullptr) {
-                throw invalid_iterator();
-            }*/ // throw? I don't know.
             return *this;
         }
 
@@ -368,20 +427,25 @@ class map {
          * TODO --iter
          */
         iterator &operator--() {
-            if (node == nullptr && map_ptr == nullptr) {
-                throw invalid_iterator();
-            }
-
-            Node *predecessor = map_ptr->find_parent(node, node->data.first);
-            if (predecessor != nullptr) {
-                node = predecessor;
-            } else {
-                Node *parent = map_ptr->find_parent(node, node->data.first);
-                while (parent != nullptr && parent->left == node) {
-                    node = parent;
-                    parent = map_ptr->find_parent(parent, parent->data.first);
+            if (node == nullptr) {
+                if (map_ptr == nullptr || map_ptr->empty()) {
+                    throw invalid_iterator();
                 }
-                node = parent;
+                node = map_ptr->find_max_node(map_ptr->root);
+                if (node == nullptr) {
+                    throw invalid_iterator();
+                }
+            } else {
+                Node *p = node;
+                if (p == map_ptr->begin().node) {
+                    throw invalid_iterator();
+                }
+
+                if (p->left != nullptr) {
+                    node = map_ptr->find_predecessor(p);
+                } else {
+                    node = map_ptr->find_predecessor_ancestor(p);
+                }
             }
             return *this;
         }
@@ -398,22 +462,22 @@ class map {
         }
 
         bool operator==(const iterator &rhs) const {
-            return node == rhs.node;
+            return (node == rhs.node) && (map_ptr == rhs.map_ptr);
         }
 
         bool operator==(const const_iterator &rhs) const {
-            return node == rhs.node;
+            return (node == rhs.node) && (map_ptr == rhs.map_ptr);
         }
 
         /**
          * some other operator for iterator.
          */
         bool operator!=(const iterator &rhs) const {
-            return node != rhs.node;
+            return (node != rhs.node) || (map_ptr != rhs.map_ptr);
         }
 
         bool operator!=(const const_iterator &rhs) const {
-            return node != rhs.node;
+            return (node != rhs.node) || (map_ptr != rhs.map_ptr);
         }
 
         /**
@@ -471,16 +535,12 @@ class map {
             if (node == nullptr) {
                 throw invalid_iterator();
             }
-            Node *successor = map_ptr->find_successor(node->right);
-            if (successor != nullptr) {
-                node = successor;
+            Node *p = node;
+
+            if (p->right != nullptr) {
+                node = map_ptr->find_successor(p->right);
             } else {
-                Node *parent = map_ptr->find_parent(node, node->data.first);
-                while (parent != nullptr && parent->right == node) {
-                    node = parent;
-                    parent = map_ptr->find_parent(parent, parent->data.first);
-                }
-                node = parent;
+                node = map_ptr->find_successor_ancestor(p);
             }
             return *this;
         }
@@ -491,18 +551,24 @@ class map {
         }
         const_iterator &operator--() {
             if (node == nullptr) {
-                throw invalid_iterator();
-            }
-            Node *predecessor = map_ptr->find_parent(node, node->data.first);
-            if (predecessor != nullptr) {
-                node = predecessor;
-            } else {
-                Node *parent = map_ptr->find_parent(node, node->data.first);
-                while (parent != nullptr && parent->left == node) {
-                    node = parent;
-                    parent = map_ptr->find_parent(parent, parent->data.first);
+                if (map_ptr == nullptr || map_ptr->empty()) {
+                    throw invalid_iterator();
                 }
-                node = parent;
+                node = map_ptr->find_max_node(map_ptr->root);
+                if (node == nullptr) {
+                    throw invalid_iterator();
+                }
+            } else {
+                Node *p = node;
+                if (p == map_ptr->cbegin().node) {
+                    throw invalid_iterator();
+                }
+
+                if (p->left != nullptr) {
+                    node = map_ptr->find_predecessor(p);
+                } else {
+                    node = map_ptr->find_predecessor_ancestor(p);
+                }
             }
             return *this;
         }
@@ -519,16 +585,16 @@ class map {
             return &node->data;
         }
         bool operator==(const const_iterator &rhs) const {
-            return node == rhs.node;
+            return (node == rhs.node) && (map_ptr == rhs.map_ptr);
         }
         bool operator==(const iterator &rhs) const {
-            return node == rhs.node;
+            return (node == rhs.node) && (map_ptr == rhs.map_ptr);
         }
         bool operator!=(const const_iterator &rhs) const {
-            return node != rhs.node;
+            return (node != rhs.node) || (map_ptr != rhs.map_ptr);
         }
         bool operator!=(const iterator &rhs) const {
-            return node != rhs.node;
+            return (node != rhs.node) || (map_ptr != rhs.map_ptr);
         }
     };
 
@@ -552,9 +618,7 @@ class map {
      */
     map &operator=(const map &other) {
         if (this != &other) {
-            delete root;
-            root = nullptr;
-            node_count = 0;
+            clear();
             deep_copy(root, other.root);
             node_count = other.node_count;
         }
@@ -565,6 +629,9 @@ class map {
      * TODO Destructors
      */
     ~map() {
+        if (root != nullptr) {
+            root->clear();
+        }
         delete root;
     }
 
@@ -672,8 +739,11 @@ class map {
      * clears the contents
      */
     void clear() {
-        delete root;
-        root = nullptr;
+        if (root != nullptr) {
+            root->clear();
+            delete root;
+            root = nullptr;
+        }
         node_count = 0;
     }
 
@@ -684,34 +754,16 @@ class map {
      * insertion), the second one is true if insert successfully, or false.
      */
     pair<iterator, bool> insert(const value_type &value) {
-        if (root == nullptr) {
-            root = new Node(value);
-            ++node_count;
-            return pair<iterator, bool>(iterator(root, this), true);
+        Node *found_node = find_node(value.first, root);
+        if (found_node != nullptr) {
+            // Key already exists
+            return pair<iterator, bool>(iterator(found_node, this), false);
+        } else {
+            size_t old_size = node_count;
+            root = insert(value, root);
+            Node *new_node = find_node(value.first, root);
+            return pair<iterator, bool>(iterator(new_node, this), true);
         }
-        Node *temp = root;
-        while (temp != nullptr) {
-            if (Compare()(value.first, temp->data.first)) {
-                if (temp->left == nullptr) {
-                    temp->left = new Node(value);
-                    ++node_count;
-                    return pair<iterator, bool>(iterator(temp->left, this),
-                                                true);
-                }
-                temp = temp->left;
-            } else if (Compare()(temp->data.first, value.first)) {
-                if (temp->right == nullptr) {
-                    temp->right = new Node(value);
-                    ++node_count;
-                    return pair<iterator, bool>(iterator(temp->right, this),
-                                                true);
-                }
-                temp = temp->right;
-            } else {
-                return pair<iterator, bool>(iterator(temp, this), false);
-            }
-        }
-        return pair<iterator, bool>(iterator(nullptr, this), false);
     }
 
     /**
@@ -739,17 +791,11 @@ class map {
         if (root == nullptr) {
             return 0;
         }
-        Node *temp = root;
-        while (temp != nullptr) {
-            if (Compare()(temp->data.first, key)) {
-                temp = temp->right;
-            } else if (Compare()(key, temp->data.first)) {
-                temp = temp->left;
-            } else {
-                return 1;  // found
-            }
+        Node *node = find_node(key, root);
+        if (node == nullptr) {
+            return 0;
         }
-        return 0;
+        return 1;
     }
 
     /**

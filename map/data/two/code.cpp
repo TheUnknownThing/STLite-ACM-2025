@@ -5,8 +5,8 @@
 #include <algorithm>
 #include <map>
 #include <ctime>
-#include "exceptions.hpp"
-#include "map.hpp"
+#include "../../src/exceptions.hpp"
+#include "../../src/map.hpp"
 
 const int MAXN = 50001;
 
@@ -408,9 +408,11 @@ void tester8() {
 			}
 			console.showProgress();
 		}
-		
 		itB = tmp2.cbegin();
+		int count = 0;
 		for (auto itA = tmp1.begin(); itA != tmp1.end(); ++itA, ++itB) {
+			count++;
+			std::cout << count << " " << (itA -> first).val << " " << (itB -> first).val << std::endl;
 			if ((itA -> first).val != (itA -> first).val || (itB -> first).val != (itB -> first).val) {
 				console.fail();
 				return;

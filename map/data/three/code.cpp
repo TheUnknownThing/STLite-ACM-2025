@@ -8,7 +8,7 @@
 #include<cstdlib>
 #include<cstring>
 #include<algorithm>
-#include "map.hpp"
+#include "../../src/map.hpp"
 
 using namespace std;
 
@@ -328,6 +328,7 @@ bool check9(){//just have fun!
 	O = Q;
 	Q.clear();
 	if(Q.size()) return 0;
+	std::cout << "first test passed" << std::endl;
 	Q[3] = 5; Q[6] = 10;
 	const sjtu::map<int, int> Q_const(Q);
 	sjtu::map<int, int> :: const_iterator cit;
@@ -339,9 +340,13 @@ bool check9(){//just have fun!
 	itQ = Q.end(); itO = O.end();
 	citQ = Q.cend(); citO = O.cend();
 	if(itQ == itO) return 0; if(citQ == citO) return 0;
+	std::cout << "second test passed" << std::endl;
 	if(!(itQ != itO)) return 0; if(!(citQ != citO)) return 0;
+	std::cout << "third test passed" << std::endl;
 	if(itQ == citO) return 0; if(itO == citQ) return 0;
+	std::cout << "fourth test passed" << std::endl;
 	if(!(itQ != citO)) return 0; if(!(itO != citQ)) return 0;
+	std::cout << "fifth test passed" << std::endl;
 	if(!(citQ == itQ)) return 0; if(citQ != itQ) return 0; 
 	return 1;
 }
