@@ -37,9 +37,10 @@ class map {
         size_t height;
         Node *left;
         Node *right;
+        Node *parent;
 
         Node(const value_type &data, Node *left = nullptr,
-             Node *right = nullptr, int height = 1)
+             Node *right = nullptr, size_t height = 1)
             : data(data), height(height), left(left), right(right) {
         }
 
@@ -146,20 +147,6 @@ class map {
         return node->balance();
     }
 
-    Node *find_successor(Node *node) {
-        while (node->left != nullptr) {
-            node = node->left;
-        }
-        return node;
-    }
-
-    Node *find_successor(Node *node) const {
-        while (node->left != nullptr) {
-            node = node->left;
-        }
-        return node;
-    }
-
     Node *find_parent(Node *node, const Key &key) {
         Node *parent = nullptr;
         Node *current = node;
@@ -213,7 +200,7 @@ class map {
                 return temp;
             } else {
                 // two children
-                Node *s = find_successor(node->right);  // new root
+                Node *s = find_after(node);
                 Node *parent =
                     find_parent(node->right, s->data.first);  // parent of s
 
@@ -286,47 +273,55 @@ class map {
         }
     }
 
-    Node *find_successor_ancestor(Node *node) const {
-        if (!root || !node) return nullptr;
-        Node *successor_candidate = nullptr;
-        Node *current = root;
-        while (current != nullptr) {
-            if (Compare()(node->data.first, current->data.first)) {
-                successor_candidate = current;
-                current = current->left;
-            } else if (Compare()(current->data.first, node->data.first)) {
-                current = current->right;
-            } else {
-                break;
+    Node *find_after(Node *node) const {
+        if (node->right != nullptr) {
+            Node *temp = node->right;
+            while (temp->left != nullptr) {
+                temp = temp->left;
             }
+            return temp;
+        } else {
+            if (!root || !node) return nullptr;
+            Node *successor_candidate = nullptr;
+            Node *current = root;
+            while (current != nullptr) {
+                if (Compare()(node->data.first, current->data.first)) {
+                    successor_candidate = current;
+                    current = current->left;
+                } else if (Compare()(current->data.first, node->data.first)) {
+                    current = current->right;
+                } else {
+                    break;
+                }
+            }
+            return successor_candidate;
         }
-        return successor_candidate;
     }
 
-    Node *find_predecessor(Node *node) const {
-        if (!node || !node->left) return nullptr;
-        Node *current = node->left;
-        while (current->right != nullptr) {
-            current = current->right;
-        }
-        return current;
-    }
-
-    Node *find_predecessor_ancestor(Node *node) const {
-        if (!root || !node) return nullptr;
-        Node *predecessor_candidate = nullptr;
-        Node *current = root;
-        while (current != nullptr) {
-            if (Compare()(node->data.first, current->data.first)) {
-                current = current->left;
-            } else if (Compare()(current->data.first, node->data.first)) {
-                predecessor_candidate = current;
+    Node *find_before(Node *node) const {
+        if (node->left != nullptr) {
+            if (!node || !node->left) return nullptr;
+            Node *current = node->left;
+            while (current->right != nullptr) {
                 current = current->right;
-            } else {
-                break;
             }
+            return current;
+        } else {
+            if (!root || !node) return nullptr;
+            Node *predecessor_candidate = nullptr;
+            Node *current = root;
+            while (current != nullptr) {
+                if (Compare()(node->data.first, current->data.first)) {
+                    current = current->left;
+                } else if (Compare()(current->data.first, node->data.first)) {
+                    predecessor_candidate = current;
+                    current = current->right;
+                } else {
+                    break;
+                }
+            }
+            return predecessor_candidate;
         }
-        return predecessor_candidate;
     }
 
     Node *find_max_node(Node *node) const {
@@ -406,11 +401,7 @@ class map {
             }
             Node *p = node;
 
-            if (p->right != nullptr) {
-                node = map_ptr->find_successor(p->right);
-            } else {
-                node = map_ptr->find_successor_ancestor(p);
-            }
+            node = map_ptr->find_after(p);
             return *this;
         }
 
@@ -441,11 +432,7 @@ class map {
                     throw invalid_iterator();
                 }
 
-                if (p->left != nullptr) {
-                    node = map_ptr->find_predecessor(p);
-                } else {
-                    node = map_ptr->find_predecessor_ancestor(p);
-                }
+                node = map_ptr->find_before(p);
             }
             return *this;
         }
@@ -537,11 +524,7 @@ class map {
             }
             Node *p = node;
 
-            if (p->right != nullptr) {
-                node = map_ptr->find_successor(p->right);
-            } else {
-                node = map_ptr->find_successor_ancestor(p);
-            }
+            node = map_ptr->find_after(p);
             return *this;
         }
         const_iterator operator--(int) {
@@ -564,11 +547,7 @@ class map {
                     throw invalid_iterator();
                 }
 
-                if (p->left != nullptr) {
-                    node = map_ptr->find_predecessor(p);
-                } else {
-                    node = map_ptr->find_predecessor_ancestor(p);
-                }
+                node = map_ptr->find_before(p);
             }
             return *this;
         }
