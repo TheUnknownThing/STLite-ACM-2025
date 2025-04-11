@@ -128,6 +128,8 @@ class map {
 
     Node *root;
     size_t node_count;
+    Node *begin_node;
+    Node *max_node;
 
     Node *insert(const value_type &value, Node *&node) {
         if (node == nullptr) {
@@ -147,7 +149,7 @@ class map {
         return node->balance();
     }
 
-    Node *find_parent(Node *node, const Key &key) {
+    Node *find_parent(Node *node, const Key &key) const {
         Node *parent = nullptr;
         Node *current = node;
         while (current != nullptr) {
@@ -164,21 +166,39 @@ class map {
         return nullptr;
     }
 
-    Node *find_parent(Node *node, const Key &key) const {
-        Node *parent = nullptr;
-        Node *current = node;
-        while (current != nullptr) {
-            if (Compare()(key, current->data.first)) {
-                parent = current;
-                current = current->left;
-            } else if (Compare()(current->data.first, key)) {
-                parent = current;
-                current = current->right;
-            } else {
-                return parent;
+    pair<Node *, Node *> find_substitution(Node *node) const {
+        if (node->right != nullptr) {
+            Node *temp = node->right;
+            Node *parent = node;
+
+            if (temp->left == nullptr) {
+                return pair<Node *, Node *>(temp, nullptr);
             }
+
+            while (temp->left != nullptr) {
+                parent = temp;
+                temp = temp->left;
+            }
+            return pair<Node *, Node *>(temp, parent);
+        } else {
+            if (!root || !node) return pair<Node *, Node *>(nullptr, nullptr);
+            Node *successor_candidate = nullptr;
+            Node *current = root;
+            Node *parent = nullptr;
+            while (current != nullptr) {
+                if (Compare()(node->data.first, current->data.first)) {
+                    successor_candidate = current;
+                    parent = current;
+                    current = current->left;
+                } else if (Compare()(current->data.first, node->data.first)) {
+                    parent = current;
+                    current = current->right;
+                } else {
+                    break;
+                }
+            }
+            return pair<Node *, Node *>(successor_candidate, parent);
         }
-        return nullptr;
     }
 
     Node *erase(const Key &key, Node *&node) {
@@ -200,9 +220,12 @@ class map {
                 return temp;
             } else {
                 // two children
-                Node *s = find_after(node);
+                /*Node *s = find_after(node);
                 Node *parent =
-                    find_parent(node->right, s->data.first);  // parent of s
+                    find_parent(node->right, s->data.first);  // parent of s*/
+                pair<Node *, Node *> p = find_substitution(node);
+                Node *s = p.first;
+                Node *parent = p.second;
 
                 // disconnect s
                 if (parent == nullptr) {
@@ -344,23 +367,6 @@ class map {
     }
 
    public:
-    T *traverse_all() {
-        T *result = new T[node_count];
-        int index = 0;
-        Node *node = root;
-        while (node != nullptr) {
-            result[index++] = node->data.second;
-            if (node->left != nullptr) {
-                node = node->left;
-            } else if (node->right != nullptr) {
-                node = node->right;
-            } else {
-                break;
-            }
-        }
-        return result;
-    }
-
     class const_iterator;
     class iterator {
        private:
@@ -422,7 +428,7 @@ class map {
                 if (map_ptr == nullptr || map_ptr->empty()) {
                     throw invalid_iterator();
                 }
-                node = map_ptr->find_max_node(map_ptr->root);
+                node = map_ptr->max_node;
                 if (node == nullptr) {
                     throw invalid_iterator();
                 }
@@ -537,7 +543,7 @@ class map {
                 if (map_ptr == nullptr || map_ptr->empty()) {
                     throw invalid_iterator();
                 }
-                node = map_ptr->find_max_node(map_ptr->root);
+                node = map_ptr->max_node;
                 if (node == nullptr) {
                     throw invalid_iterator();
                 }
@@ -583,6 +589,8 @@ class map {
     map() {
         root = nullptr;
         node_count = 0;
+        begin_node = nullptr;
+        max_node = nullptr;
     }
 
     map(const map &other) {
@@ -590,6 +598,21 @@ class map {
         node_count = 0;
         deep_copy(root, other.root);
         node_count = other.node_count;
+        // find the begin node
+        if (root != nullptr) {
+            begin_node = root;
+            while (begin_node->left != nullptr) {
+                begin_node = begin_node->left;
+            }
+
+            max_node = root;
+            while (max_node->right != nullptr) {
+                max_node = max_node->right;
+            }
+        } else {
+            begin_node = nullptr;
+            max_node = nullptr;
+        }
     }
 
     /**
@@ -600,6 +623,19 @@ class map {
             clear();
             deep_copy(root, other.root);
             node_count = other.node_count;
+            if (root != nullptr) {
+                begin_node = root;
+                while (begin_node->left != nullptr) {
+                    begin_node = begin_node->left;
+                }
+                max_node = root;
+                while (max_node->right != nullptr) {
+                    max_node = max_node->right;
+                }
+            } else {
+                begin_node = nullptr;
+                max_node = nullptr;
+            }
         }
         return *this;
     }
@@ -669,22 +705,24 @@ class map {
         if (root == nullptr) {
             return iterator(nullptr, this);
         }
-        Node *node = root;
+        /*Node *node = root;
         while (node->left != nullptr) {
             node = node->left;
         }
-        return iterator(node, this);
+        return iterator(node, this);*/
+        return iterator(begin_node, this);
     }
 
     const_iterator cbegin() const {
         if (root == nullptr) {
             return const_iterator(nullptr, this);
         }
-        Node *node = root;
+        /*Node *node = root;
         while (node->left != nullptr) {
             node = node->left;
         }
-        return const_iterator(node, this);
+        return const_iterator(node, this);*/
+        return const_iterator(begin_node, this);
     }
 
     /**
@@ -722,6 +760,8 @@ class map {
             root->clear();
             delete root;
             root = nullptr;
+            begin_node = nullptr;
+            max_node = nullptr;
         }
         node_count = 0;
     }
@@ -741,6 +781,12 @@ class map {
             size_t old_size = node_count;
             root = insert(value, root);
             Node *new_node = find_node(value.first, root);
+            if (begin_node == nullptr || Compare()(value.first, begin_node->data.first)) {
+                begin_node = new_node;
+            }
+            if (max_node == nullptr || Compare()(max_node->data.first, value.first)) {
+                max_node = new_node;
+            }
             return pair<iterator, bool>(iterator(new_node, this), true);
         }
     }
@@ -755,8 +801,31 @@ class map {
         if (pos.node == nullptr || pos.map_ptr != this) {
             throw invalid_iterator();
         }
+        
+        bool need_update_max = (pos.node == max_node);
+        bool need_update_begin = (pos.node == begin_node);
+        
         root = erase(pos.node->data.first, root);
         --node_count;
+        
+        if (root != nullptr) {
+            if (need_update_begin || begin_node == nullptr) {
+                begin_node = root;
+                while (begin_node->left != nullptr) {
+                    begin_node = begin_node->left;
+                }
+            }
+            
+            if (need_update_max || max_node == nullptr) {
+                max_node = root;
+                while (max_node->right != nullptr) {
+                    max_node = max_node->right;
+                }
+            }
+        } else {
+            begin_node = nullptr;
+            max_node = nullptr;
+        }
     }
 
     /**

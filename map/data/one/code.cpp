@@ -82,7 +82,6 @@ void tester(void) {
 		std::cout << map.size() << " " << copy.size() << " ";
 	}
 	std::cout << std::endl;
-	std::cout << "third test done" << std::endl;
 	//	test: const_iterator, cbegin(), cend(), operator++, at()
 	sjtu::map<Integer, std::string, Compare>::const_iterator const_iterator;
 	const_iterator = map.cbegin();
@@ -92,7 +91,6 @@ void tester(void) {
 		std::cout << map.at(integer) << " ";
 	}
 	std::cout << std::endl;
-	std::cout << "fourth test done" << std::endl;
 	//	test: iterator, operator--, operator->
 	sjtu::map<Integer, std::string, Compare>::iterator iterator;
 	iterator = map.end();
