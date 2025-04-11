@@ -491,6 +491,7 @@ bool check12(){ // erase(it++)
 			if(it -> first != stdit -> first) return 0;
 		}
 	}	
+
 	if(Q.size() != stdQ.size()) return 0;
 	it = Q.begin();
 	for(stdit = stdQ.begin(); stdit != stdQ.end(); stdit++){ 

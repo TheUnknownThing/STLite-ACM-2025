@@ -1,4 +1,4 @@
-#include "src.hpp"
+#include "../src/map.hpp"
 #include <iostream>
 
 signed main() {

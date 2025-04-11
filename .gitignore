@@ -20,3 +20,7 @@ map/data/two/code
 .gitignore
 map/data/three/code
 map/data/one/callgrind.out.2026877
+map/data/one/callgrind.out.2033217
+map/data/one/callgrind.out.2035462
+map/data/one/callgrind.out.2037448
+map/corner_data/3
